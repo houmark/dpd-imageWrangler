@@ -12,9 +12,7 @@ var Resource = require('deployd/lib/resource'),
 	fs = require('fs'),
 	path = require('path'),
 	gm = require('gm'),
-	AWS = require('aws-sdk'),
-	s3Stream = require('s3-upload-stream')(new AWS.S3());
-
+	AWS = require('aws-sdk');
 /**
  * Module setup.
  */
@@ -28,7 +26,6 @@ function ImageWrangler(name, options) {
 			bucket: this.config.bucket,
 			region: this.config.region
 		});
-		this.client = require("s3-upload-stream")(new AWS.S3());
 	}
 
 
@@ -285,15 +282,16 @@ ImageWrangler.prototype.uploadFile = function(ctx, config, stream, fn) {
 		var s3config = {
 			Bucket: wrangler.config.bucket,
 			Key: domain.data.filename.replace(/^\/+/, ""),
-			ContentType: domain.data.mime
+			ContentType: domain.data.mime,
+			Body: stream
 		};
 		if (wrangler.config.publicRead) {
 			s3config.ACL = 'public-read';
 		}
-		var upload = wrangler.client.upload(s3config);
-		stream.pipe(upload);
 
-		upload.on('uploaded', function(details) {
+		var upload = new AWS.S3.ManagedUpload({params: s3config});
+		upload.send(function(err, data) {
+			if (err) return ctx.done(err);
 			if (wrangler.events.Saved) {
 				wrangler.events.Saved.run(ctx, {
 					data: {
