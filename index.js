@@ -52,7 +52,7 @@ ImageWrangler.basicDashboard = {
 	}, {
 		name: 'tasks',
 		type: 'textarea',
-		description: 'JSON array of objects detailing the image specs to be created for each image uploaded to this endpoint'
+		description: 'JSON object detailing the image specs to be created for each image uploaded to this endpoint'
 	}, {
 		name: 'bucket',
 		type: 'text',
@@ -86,6 +86,12 @@ ImageWrangler.prototype.process = function(ctx) {
 	var parts = ctx.url.split('/').filter(function(p) {
 		return p;
 	});
+
+	if (!resizeTasks[parts[0]]) {
+		return ctx.done("invalid upload scope");
+	}
+	resizeTasks = resizeTasks[parts[0]];
+	
 	var subDirPath = '';
 	if (parts.length > 0) subDirPath = parts.join('/');
 
