@@ -51,7 +51,7 @@ ImageWrangler.basicDashboard = {
 		description: 'The AWS region'
 	}, {
 		name: 'tasks',
-		type: 'object',
+		type: 'textarea',
 		description: 'JSON array of objects detailing the image specs to be created for each image uploaded to this endpoint'
 	}, {
 		name: 'bucket',
@@ -72,10 +72,6 @@ ImageWrangler.basicDashboard = {
 		name: 'imageQuality',
 		type: 'text',
 		description: '0-100 (default 95)'
-	}, {
-		name: 'crop',
-		type: 'checkbox',
-		description: 'center crop image if necessary'
 	}]
 };
 
@@ -152,7 +148,7 @@ ImageWrangler.prototype.process = function(ctx) {
 					ctx.done(err);
 				}
 			};
-			if (wrangler.config.crop) {
+			if (task.crop) {
 				gm(buffer)
 					.quality(quality)
 					.autoOrient()
