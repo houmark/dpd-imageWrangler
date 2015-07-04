@@ -156,7 +156,7 @@ ImageWrangler.prototype.process = function(ctx) {
 				gm(buffer)
 					.quality(quality)
 					.autoOrient()
-					.resize(task.width, task.height, '>')
+					.resize(task.width, task.height, '^')
 					.gravity('Center')
 					.extent(task.width, task.height)
 					.stream(function(err, stdout, stderr) {
