@@ -12,7 +12,8 @@ var Resource = require('deployd/lib/resource'),
 	fs = require('fs'),
 	path = require('path'),
 	gm = require('gm'),
-	AWS = require('aws-sdk');
+	AWS = require('aws-sdk'),
+	Promise = require('bluebird');
 /**
  * Module setup.
  */
@@ -91,7 +92,7 @@ ImageWrangler.prototype.process = function(ctx) {
 		return ctx.done("invalid upload scope");
 	}
 	resizeTasks = resizeTasks[parts[0]];
-	
+
 	var subDirPath = '';
 	if (parts.length > 0) subDirPath = parts.join('/');
 
@@ -154,25 +155,69 @@ ImageWrangler.prototype.process = function(ctx) {
 					ctx.done(err);
 				}
 			};
-			if (task.crop) {
-				gm(buffer)
-					.quality(quality)
-					.autoOrient()
-					.resize(task.width, task.height, '^')
-					.gravity('Center')
-					.extent(task.width, task.height)
-					.stream(function(err, stdout, stderr) {
-						completionBlock(err, stdout);
-					});
-			} else {
-				gm(buffer)
-					.quality(quality)
-					.autoOrient()
-					.resize(task.width, task.height, '>')
-					.stream(function(err, stdout, stderr) {
-						completionBlock(err, stdout);
-					});
-			}
+
+			var resizeImage = function() {
+				if (task.crop) {
+					gm(buffer)
+						.quality(quality)
+						.autoOrient()
+						.resize(task.width, task.height, '^')
+						.gravity('Center')
+						.extent(task.width, task.height)
+						.stream(function(err, stdout, stderr) {
+							completionBlock(err, stdout);
+						});
+				} else {
+					gm(buffer)
+						.quality(quality)
+						.autoOrient()
+						.flatten()
+						.resize(task.width, task.height, '>')
+						.stream(function(err, stdout, stderr) {
+							completionBlock(err, stdout);
+						});
+				}
+			};
+			var resizeVectorial = function() {
+				if (task.crop) {
+					gm(buffer)
+						.density(300,300)
+
+						.quality(quality)
+						//.flatten()
+						.resize(task.width, task.height, '^')
+						.gravity('Center')
+						.extent(task.width, task.height)
+						.setFormat("PNG")
+						.stream(function(err, stdout, stderr) {
+							completionBlock(err, stdout);
+						});
+				} else {
+					gm(buffer)
+						.density(300,300)
+
+						.quality(quality)
+						//.flatten()
+						.resize(task.width, task.height, '>')
+						.setFormat("PNG")
+						.stream(function(err, stdout, stderr) {
+							completionBlock(err, stdout);
+						});
+				}
+			};
+
+			gm(buffer).format(function(err, value) {
+				if (err) {
+					ctx.done(err);
+					return;
+				}
+				if (value === "PS") {
+					resizeVectorial();
+				} else {
+					resizeImage();
+				}
+
+			});
 		} else {
 			if (req.headers.referer) {
 				ctx.done(null, responseObject);
@@ -188,24 +233,22 @@ ImageWrangler.prototype.process = function(ctx) {
 		var output = cleanseFilename(part.filename).split('.');
 		var outputName = output[0] + '-original.' + output[1];
 
-		var buffer = null;
-		wrangler.readStream(part, function(err, buf) {
-			if (err) {
-				return ctx.done(err);
-			}
-			buffer = buf;
+		var readPromise = wrangler.readStream(part).catch(function(err) {
+			return ctx.done(err);
 		});
 
-		function uploadFile(path) {
-			wrangler.uploadFile(ctx, {
-				originalFilename: part.filename,
-				originalPath: subDirPath,
-				filename: path,
-				mime: part.headers["content-type"]
-			}, part, function(task, savedFile) {
-				var size = task ? task.suffix : "original";
-				responseObject[size] = wrangler.config.basePath + savedFile.replace(/^\/+/, "");
-				resizeFile(part, buffer);
+		function uploadOriginalFile(path) {
+			readPromise.then(function(buffer){
+				wrangler.uploadFile(ctx, {
+					originalFilename: part.filename,
+					originalPath: subDirPath,
+					filename: path,
+					mime: part.headers["content-type"]
+				}, buffer, function(task, savedFile) {
+					var size = task ? task.suffix : "original";
+					responseObject[size] = wrangler.config.basePath + savedFile.replace(/^\/+/, "");
+					resizeFile(part, buffer);
+				});
 			});
 		}
 
@@ -224,10 +267,10 @@ ImageWrangler.prototype.process = function(ctx) {
 					part.resume();
 					return ctx.done(err);
 				}
-				uploadFile(cleanupPath('/' + domain.data.path + '/' + domain.data.filename));
+				uploadOriginalFile(cleanupPath('/' + domain.data.path + '/' + domain.data.filename));
 			});
 		} else {
-			uploadFile(cleanupPath('/' + subDirPath + '/' + outputName));
+			uploadOriginalFile(cleanupPath('/' + subDirPath + '/' + outputName));
 		}
 
 	});
@@ -333,14 +376,16 @@ ImageWrangler.prototype.uploadFile = function(ctx, config, stream, fn) {
 	}
 };
 
-ImageWrangler.prototype.readStream = function(stream, fn) {
-	var buffer = [];
-	stream.on('data', function(data) {
-		buffer.push(data);
-	}).on('end', function() {
-		fn(null, Buffer.concat(buffer));
-	}).on('error', function(err) {
-		fn(err);
+ImageWrangler.prototype.readStream = function(stream) {
+	return new Promise(function(resolve, reject) {
+		var buffer = [];
+		stream.on('data', function(data) {
+			buffer.push(data);
+		}).on('end', function() {
+			resolve(Buffer.concat(buffer));
+		}).on('error', function(err) {
+			reject(err);
+		});
 	});
 };
 
