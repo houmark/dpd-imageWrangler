@@ -11,7 +11,7 @@ var Resource = require('deployd/lib/resource'),
 	multiparty = require('multiparty'),
 	fs = require('fs'),
 	path = require('path'),
-	gm = require('gm'),
+	gm = require('gm').subClass({imageMagick: true}),
 	AWS = require('aws-sdk'),
 	Promise = require('bluebird');
 /**
@@ -179,10 +179,11 @@ ImageWrangler.prototype.process = function(ctx) {
 				}
 			};
 			var resizeVectorial = function() {
+
 				if (task.crop) {
 					gm(buffer)
+						.in("-colorspace", "srgb")
 						.density(300,300)
-
 						.quality(quality)
 						//.flatten()
 						.resize(task.width, task.height, '^')
@@ -194,8 +195,8 @@ ImageWrangler.prototype.process = function(ctx) {
 						});
 				} else {
 					gm(buffer)
+						.in("-colorspace", "srgb")
 						.density(300,300)
-
 						.quality(quality)
 						//.flatten()
 						.resize(task.width, task.height, '>')
@@ -211,7 +212,8 @@ ImageWrangler.prototype.process = function(ctx) {
 					ctx.done(err);
 					return;
 				}
-				if (value === "PS") {
+
+				if ((/EPT|PS/i).test(value)) {
 					resizeVectorial();
 				} else {
 					resizeImage();
