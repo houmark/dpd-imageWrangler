@@ -13,7 +13,8 @@ var Resource = require('deployd/lib/resource'),
 	path = require('path'),
 	gm = require('gm').subClass({imageMagick: true}),
 	AWS = require('aws-sdk'),
-	Promise = require('bluebird');
+	Promise = require('bluebird'),
+	request = require('request');
 /**
  * Module setup.
  */
@@ -234,6 +235,21 @@ ImageWrangler.prototype.process = function(ctx) {
 			}
 		}
 	};
+
+  form.on('field', function(field, value) {
+		if (field && field.toLowerCase() === "downloadurl") {
+			var url = value.trim();
+
+			var stream = request.get(url);
+
+			stream.on('response', function(response) {
+				stream.headers = response.headers['content-type'];
+				stream.filename = url.split('/').pop();
+				form.emit('part', stream);
+		  });
+
+		}
+	});
 
 	form.on('part', function(part) {
 		remaining++;
