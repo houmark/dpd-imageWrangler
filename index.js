@@ -30,8 +30,6 @@ function ImageWrangler(name, options) {
 			region: this.config.region
 		});
 	}
-
-
 }
 util.inherits(ImageWrangler, Resource);
 
