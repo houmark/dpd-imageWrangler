@@ -306,8 +306,13 @@ ImageWrangler.prototype.process = function(ctx) {
 		error = err;
 	});
 
-	form.parse(req);
-	req.resume();
+	if (ctx.body && ctx.body.downloadurl) {
+		form.emit('field', "downloadurl", ctx.body.downloadurl);
+	} else {
+		form.parse(req);
+		req.resume();
+	}
+
 };
 
 /**
@@ -330,7 +335,7 @@ ImageWrangler.prototype.handle = function(ctx, next) {
 		});
 	}
 
-	if (req.method === 'POST' && !req.internal && req.headers['content-type'].indexOf('multipart/form-data') === 0) {
+	if (req.method === 'POST') {
 		if (wrangler.events.Post) {
 			wrangler.events.Post.run(ctx, {}, function(err) {
 				if (err) return ctx.done(err);
