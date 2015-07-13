@@ -1,6 +1,6 @@
 {
   "name": "dpd-image-wrangler",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "homepage": "https://github.com/UncorkedStudios/dpd-imageWrangler",
   "dependencies": {
     "aws-sdk": "^2.1.36",
