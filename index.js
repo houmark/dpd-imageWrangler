@@ -14,7 +14,8 @@ var Resource = require('deployd/lib/resource'),
 	gm = require('gm').subClass({imageMagick: true}),
 	AWS = require('aws-sdk'),
 	Promise = require('bluebird'),
-	request = require('request');
+	request = require('request'),
+	ms = require('millisecond');
 /**
  * Module setup.
  */
@@ -61,11 +62,15 @@ ImageWrangler.basicDashboard = {
 	}, {
 		name: 'basePath',
 		type: 'text',
-		description: 'base url for where someone could GET the file off the bucket (cloud front url if you are using that)'
+		description: 'Base URL for where someone could GET the file off the bucket (cloud front url if you are using that)'
 	}, {
 		name: 'publicRead',
 		type: 'checkbox',
-		description: 'when files are uploaded to your bucket, automatically set public read access?'
+		description: 'When files are uploaded to your bucket, automatically set public read access?'
+	},{
+		name: 'cacheLifetime',
+		type: 'text',
+		description: 'Set the time (ie. \'5 years\') that images can be cached by browsers (Far Future Headers)'
 	}, {
 		name: 'internalOnly',
 		type: 'checkbox',
@@ -356,6 +361,15 @@ ImageWrangler.prototype.uploadFile = function(ctx, config, stream, fn) {
 		};
 		if (wrangler.config.publicRead) {
 			s3config.ACL = 'public-read';
+		}
+
+		// Set Far Future Headers
+		var cacheLifetime = ms(wrangler.config.cacheLifetime);
+		if (cacheLifetime > 0) {
+			s3config.CacheControl = 'public, max-age='+ cacheLifetime / 1000;
+			s3config.ResponseCacheControl = s3config.CacheControl;
+			s3config.Expires = Math.floor(new Date((cacheLifetime + Date.now()) / 1000));
+			s3config.ResponseExpires = s3config.Expires;
 		}
 
 		var upload = new AWS.S3.ManagedUpload({params: s3config});
