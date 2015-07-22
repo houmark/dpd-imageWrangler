@@ -246,9 +246,15 @@ ImageWrangler.prototype.process = function(ctx) {
 			var stream = request.get(url);
 
 			stream.on('response', function(response) {
-				stream.headers = response.headers['content-type'];
-				stream.filename = url.split('/').pop();
-				form.emit('part', stream);
+				if (response.statusCode < 400) {
+					stream.headers = response.headers['content-type'];
+					stream.filename = url.split('/').pop();
+					form.emit('part', stream);
+				} else { // Else this image is not found or another problem...
+					return ctx.done({
+						statusCode: response.statusCode
+					});
+				}
 		  });
 
 		}
