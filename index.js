@@ -168,8 +168,8 @@ ImageWrangler.prototype.process = function(ctx) {
 						.resize(task.width, task.height, '^')
 						.gravity('Center')
 						.extent(task.width, task.height)
-						.stream(function(err, stdout, stderr) {
-							completionBlock(err, stdout);
+						.toBuffer(function(err, buffer) {
+							completionBlock(err, buffer);
 						});
 				} else {
 					gm(buffer)
@@ -177,8 +177,8 @@ ImageWrangler.prototype.process = function(ctx) {
 						.autoOrient()
 						.flatten()
 						.resize(task.width, task.height, '>')
-						.stream(function(err, stdout, stderr) {
-							completionBlock(err, stdout);
+						.toBuffer(function(err, buffer) {
+							completionBlock(err, buffer);
 						});
 				}
 			};
@@ -197,8 +197,8 @@ ImageWrangler.prototype.process = function(ctx) {
 						.gravity('Center')
 						.extent(task.width, task.height)
 						.setFormat("PNG")
-						.stream(function(err, stdout, stderr) {
-							completionBlock(err, stdout);
+						.toBuffer(function(err, buffer) {
+							completionBlock(err, buffer);
 						});
 				} else {
 					gm(buffer)
@@ -211,8 +211,8 @@ ImageWrangler.prototype.process = function(ctx) {
 						//.flatten()
 						.resize(task.width, task.height, '>')
 						.setFormat("PNG")
-						.stream(function(err, stdout, stderr) {
-							completionBlock(err, stdout);
+						.toBuffer(function(err, buffer) {
+							completionBlock(err, buffer);
 						});
 				}
 			};
