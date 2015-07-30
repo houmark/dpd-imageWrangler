@@ -15,7 +15,9 @@ var Resource = require('deployd/lib/resource'),
 	AWS = require('aws-sdk'),
 	Promise = require('bluebird'),
 	request = require('request'),
-	ms = require('millisecond');
+	ms = require('millisecond'),
+	sizeOf = require('image-size'),
+	fileType = require('file-type');
 /**
  * Module setup.
  */
@@ -136,7 +138,7 @@ ImageWrangler.prototype.process = function(ctx) {
 
 		if (resizeTasks.length > 0) {
 			var task = resizeTasks.pop();
-			//console.log('task: ' + JSON.stringify(task));
+			// console.log('task: ' + JSON.stringify(task));
 
 			var output = cleanseFilename(part.filename).split('.');
 			var outputName = output[0] + '-' + task.suffix + '.' + output[1];
@@ -146,13 +148,20 @@ ImageWrangler.prototype.process = function(ctx) {
 				quality = wrangler.config.imageQuality;
 			}
 			var completionBlock = function(err, stream) {
+
+				// console.log(sizeOf(stream));
+				// console.log(fileType(stream));
+				// console.log(part.headers["content-type"]);
+
 				if (!err) {
+					var ft = fileType(stream);
 					wrangler.uploadFile(ctx, {
 						task: task,
 						originalFilename: part.filename,
 						originalPath: subDirPath,
 						filename: '/' + subDirPath + '/' + outputName,
-						mime: part.headers["content-type"]
+						mime: ft.mime,
+						sizes: sizeOf(stream)
 					}, stream, next);
 				} else {
 					//console.log(' error writing: ' + err);
@@ -272,6 +281,7 @@ ImageWrangler.prototype.process = function(ctx) {
 
 		function uploadOriginalFile(path) {
 			readPromise.then(function(buffer){
+				// var ft = fileType(buffer);
 				wrangler.uploadFile(ctx, {
 					originalFilename: part.filename,
 					originalPath: subDirPath,
@@ -392,7 +402,8 @@ ImageWrangler.prototype.uploadFile = function(ctx, config, stream, fn) {
 						originalPath: config.originalPath,
 						savedFilename: domain.data.filename,
 						mime: domain.data.mime,
-						baseUrl: wrangler.config.basePath
+						baseUrl: wrangler.config.basePath,
+						sizes: config.sizes
 					}
 				}, function(err) {
 					if (err) return ctx.done(err);
