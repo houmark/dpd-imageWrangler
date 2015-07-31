@@ -18,18 +18,20 @@ var Resource = require('deployd/lib/resource'),
 	ms = require('millisecond'),
 	sizeOf = require('image-size'),
 	fileType = require('file-type');
+
+
 /**
  * Module setup.
  */
 
 function ImageWrangler(name, options) {
 	Resource.apply(this, arguments);
-	if (this.config.accessKey && this.config.accessSecret && this.config.bucket) {
+	if (this.getConfigValue("accessKey") && this.getConfigValue("accessSecret") && this.getConfigValue("bucket")) {
 		AWS.config.update({
-			accessKeyId: this.config.accessKey,
-			secretAccessKey: this.config.accessSecret,
-			bucket: this.config.bucket,
-			region: this.config.region
+			accessKeyId: this.getConfigValue("accessKey"),
+			secretAccessKey: this.getConfigValue("accessSecret"),
+			bucket: this.getConfigValue("bucket"),
+			region: this.getConfigValue("region")
 		});
 	}
 }
@@ -45,24 +47,45 @@ ImageWrangler.basicDashboard = {
 		type: 'text',
 		description: 'The AWS access key id'
 	}, {
+		name: 'accessKeyIsEnv',
+		type: 'checkbox',
+		description: 'Check if accessKey is the name of an environment variable'
+	}, {
 		name: 'accessSecret',
 		type: 'text',
 		description: 'The AWS secret access key'
+	}, {
+		name: 'accessSecretIsEnv',
+		type: 'checkbox',
+		description: 'Check if accessSecret is the name of an environment variable'
 	}, {
 		name: 'region',
 		type: 'text',
 		description: 'The AWS region'
 	}, {
-		name: 'tasks',
-		type: 'textarea',
-		description: 'JSON object detailing the image specs to be created for each image uploaded to this endpoint'
+		name: 'regionIsEnv',
+		type: 'checkbox',
+		description: 'Check if region is the name of an environment variable'
 	}, {
 		name: 'bucket',
 		type: 'text',
+		description: 'The AWS bucket'
+	}, {
+		name: 'bucketIsEnv',
+		type: 'checkbox',
+		description: 'Check if bucket is the name of an environment variable'
 	}, {
 		name: 'basePath',
 		type: 'text',
 		description: 'Base URL for where someone could GET the file off the bucket (cloud front url if you are using that)'
+	}, {
+		name: 'basePathIsEnv',
+		type: 'checkbox',
+		description: 'Check if basePath is the name of an environment variable'
+	}, {
+		name: 'tasks',
+		type: 'textarea',
+		description: 'JSON object detailing the image specs to be created for each image uploaded to this endpoint'
 	}, {
 		name: 'publicRead',
 		type: 'checkbox',
@@ -80,6 +103,13 @@ ImageWrangler.basicDashboard = {
 		type: 'text',
 		description: '0-100 (default 95)'
 	}]
+};
+
+ImageWrangler.prototype.getConfigValue = function(key) {
+	if (this.config[key + "IsEnv"]) {
+		return process.env[this.config[key]];
+	}
+	return this.config[key];
 };
 
 function cleanupPath(path) {
@@ -132,7 +162,7 @@ ImageWrangler.prototype.process = function(ctx) {
 	var resizeFile = function(part, buffer) {
 		function next(task, savedFile) {
 			var size = task ? task.suffix : "original";
-			responseObject[size] = wrangler.config.basePath + savedFile.replace(/^\/+/, "");
+			responseObject[size] = wrangler.getConfigValue("basePath") + savedFile.replace(/^\/+/, "");
 			resizeFile(part, buffer);
 		}
 
@@ -289,7 +319,7 @@ ImageWrangler.prototype.process = function(ctx) {
 					mime: part.headers["content-type"]
 				}, buffer, function(task, savedFile) {
 					var size = task ? task.suffix : "original";
-					responseObject[size] = wrangler.config.basePath + savedFile.replace(/^\/+/, "");
+					responseObject[size] = wrangler.getConfigValue("basePath") + savedFile.replace(/^\/+/, "");
 					resizeFile(part, buffer);
 				});
 			});
@@ -373,7 +403,7 @@ ImageWrangler.prototype.uploadFile = function(ctx, config, stream, fn) {
 
 	function uploadFn(domain) {
 		var s3config = {
-			Bucket: wrangler.config.bucket,
+			Bucket: wrangler.getConfigValue("bucket"),
 			Key: domain.data.filename.replace(/^\/+/, ""),
 			ContentType: domain.data.mime,
 			Body: stream
@@ -402,7 +432,7 @@ ImageWrangler.prototype.uploadFile = function(ctx, config, stream, fn) {
 						originalPath: config.originalPath,
 						savedFilename: domain.data.filename,
 						mime: domain.data.mime,
-						baseUrl: wrangler.config.basePath,
+						baseUrl: wrangler.getConfigValue("basePath"),
 						sizes: config.sizes
 					}
 				}, function(err) {
