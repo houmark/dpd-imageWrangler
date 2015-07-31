@@ -311,11 +311,17 @@ ImageWrangler.prototype.process = function(ctx) {
 
 		function uploadOriginalFile(path) {
 			readPromise.then(function(buffer){
+				var sizes = {width: 0, height: 0};
+				var type = fileType(buffer);
+				if (type && type.ext && /png|jpg|gif|ps/.test(type.ext)) {
+					sizes = sizeOf(buffer);
+				}
 				// var ft = fileType(buffer);
 				wrangler.uploadFile(ctx, {
 					originalFilename: part.filename,
 					originalPath: subDirPath,
 					filename: path,
+					sizes: sizes,
 					mime: part.headers["content-type"]
 				}, buffer, function(task, savedFile) {
 					var size = task ? task.suffix : "original";
