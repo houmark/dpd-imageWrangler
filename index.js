@@ -184,15 +184,20 @@ ImageWrangler.prototype.process = function(ctx) {
 				// console.log(part.headers["content-type"]);
 
 				if (!err) {
-					var ft = fileType(stream);
-					wrangler.uploadFile(ctx, {
+					var file = {
 						task: task,
 						originalFilename: part.filename,
 						originalPath: subDirPath,
 						filename: '/' + subDirPath + '/' + outputName,
-						mime: ft.mime,
 						sizes: sizeOf(stream)
-					}, stream, next);
+					};
+					var ft = fileType(stream);
+					if (ft && ft.mime !== null) {
+						file.mime = ft.mime;
+					}
+
+					wrangler.uploadFile(ctx, file, stream, next);
+
 				} else {
 					//console.log(' error writing: ' + err);
 					ctx.done(err);
