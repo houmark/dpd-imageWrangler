@@ -17,7 +17,8 @@ var Resource = require('deployd/lib/resource'),
 	request = require('request'),
 	ms = require('millisecond'),
 	sizeOf = require('image-size'),
-	fileType = require('file-type');
+	fileType = require('file-type'),
+	Imagemin = require('imagemin');
 
 
 /**
@@ -177,31 +178,35 @@ ImageWrangler.prototype.process = function(ctx) {
 			if (wrangler.config.imageQuality) {
 				quality = wrangler.config.imageQuality;
 			}
-			var completionBlock = function(err, stream) {
+			var completionBlock = function(err, buffer) {
+				if (err) return ctx.done(err);
 
-				// console.log(sizeOf(stream));
-				// console.log(fileType(stream));
-				// console.log(part.headers["content-type"]);
+				var file = {
+					task: task,
+					originalFilename: part.filename,
+					originalPath: subDirPath,
+					filename: '/' + subDirPath + '/' + outputName,
+					sizes: sizeOf(buffer)
+				};
 
-				if (!err) {
-					var file = {
-						task: task,
-						originalFilename: part.filename,
-						originalPath: subDirPath,
-						filename: '/' + subDirPath + '/' + outputName,
-						sizes: sizeOf(stream)
-					};
-					var ft = fileType(stream);
-					if (ft && ft.mime !== null) {
-						file.mime = ft.mime;
-					}
-
-					wrangler.uploadFile(ctx, file, stream, next);
-
-				} else {
-					//console.log(' error writing: ' + err);
-					ctx.done(err);
+				var ft = fileType(buffer);
+				if (ft && ft.mime !== null) {
+					file.mime = ft.mime;
 				}
+
+				// optimize with Imagemin
+				new Imagemin()
+					.src(buffer)
+					.use(Imagemin.jpegtran({progressive: true}))
+					.use(Imagemin.optipng({optimizationLevel: 3}))
+					.use(Imagemin.gifsicle({interlaced: true}))
+					.run(function (err, files) {
+						if (err) {
+							return ctx.done(err);
+						}
+						wrangler.uploadFile(ctx, file, files[0].contents, next);
+					});
+
 			};
 
 			var resizeImage = function() {
