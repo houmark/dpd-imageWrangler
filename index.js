@@ -319,7 +319,11 @@ ImageWrangler.prototype.process = function(ctx) {
 				var sizes = {width: 0, height: 0};
 				var type = fileType(buffer);
 				if (type && type.ext && /png|jpg|gif|ps/.test(type.ext)) {
-					sizes = sizeOf(buffer);
+					try {
+						sizes = sizeOf(buffer);
+					} catch(err) {
+						// could not get size for some reason, ignore
+					}
 				}
 				// var ft = fileType(buffer);
 				wrangler.uploadFile(ctx, {
