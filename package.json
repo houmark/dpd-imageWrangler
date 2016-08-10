@@ -4,12 +4,12 @@
   "homepage": "https://github.com/UncorkedStudios/dpd-imageWrangler",
   "dependencies": {
     "aws-sdk": "^2.1.36",
-    "bluebird": "^2.9.32",
-    "file-type": "^2.10.0",
+    "bluebird": "^3.4.1",
+    "file-type": "^3.8.0",
     "formidable": "1.0.x",
-    "gm": "~1.14.2",
-    "image-size": "^0.3.5",
-    "imagemin": "^3.2.0",
+    "gm": "^1.23.0",
+    "image-size": "^0.5.0",
+    "imagemin": "^5.2.2",
     "millisecond": "^0.1.1",
     "multiparty": "^4.1.2",
     "request": "^2.58.0"
