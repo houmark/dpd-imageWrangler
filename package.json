@@ -3,15 +3,17 @@
   "version": "0.2.6",
   "homepage": "https://github.com/houmark/dpd-imageWrangler",
   "dependencies": {
-    "aws-sdk": "^2.1.36",
+    "aws-sdk": "^2.4.14",
     "bluebird": "^3.4.1",
     "file-type": "^3.8.0",
-    "formidable": "1.0.x",
+    "formidable": "^1.0.17",
     "gm": "^1.23.0",
     "image-size": "^0.5.0",
     "imagemin": "^5.2.2",
-    "millisecond": "^0.1.1",
+    "imagemin-mozjpeg": "^6.0.0",
+    "imagemin-optipng": "^5.2.0",
+    "millisecond": "^0.1.2",
     "multiparty": "^4.1.2",
-    "request": "^2.58.0"
+    "request": "^2.74.0"
   }
 }
