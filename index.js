@@ -18,7 +18,9 @@ var Resource = require('deployd/lib/resource'),
 	ms = require('millisecond'),
 	sizeOf = require('image-size'),
 	fileType = require('file-type'),
-	Imagemin = require('imagemin');
+  imagemin = require('imagemin'),
+  imageminOptipng = require('imagemin-optipng'),
+  imageminMozjpeg = require('imagemin-mozjpeg');
 
 
 /**
@@ -195,16 +197,11 @@ ImageWrangler.prototype.process = function(ctx) {
 				}
 
 				// optimize with Imagemin
-				new Imagemin()
-					.src(buffer)
-					.use(Imagemin.jpegtran({progressive: true}))
-					.use(Imagemin.optipng({optimizationLevel: 3}))
-					.use(Imagemin.gifsicle({interlaced: true}))
-					.run(function (err, files) {
-						if (err) {
-							return ctx.done(err);
-						}
-						wrangler.uploadFile(ctx, file, files[0].contents, next);
+				imagemin.buffer(buffer, [
+            imageminOptipng([{optimizationLevel: 3}])(buffer),
+            imageminMozjpeg([{progressive: true, quality: 90}])
+          ]).then(function(files) {
+						wrangler.uploadFile(ctx, file, files, next);
 					});
 
 			};
