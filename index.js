@@ -199,7 +199,7 @@ ImageWrangler.prototype.process = function(ctx) {
 				// optimize with Imagemin
 				imagemin.buffer(buffer, [
             imageminOptipng([{optimizationLevel: 3}])(buffer),
-            imageminMozjpeg([{progressive: true, quality: 90}])
+            imageminMozjpeg([{progressive: true}])
           ]).then(function(files) {
 						wrangler.uploadFile(ctx, file, files, next);
 					});
