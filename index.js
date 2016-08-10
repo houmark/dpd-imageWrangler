@@ -214,6 +214,7 @@ ImageWrangler.prototype.process = function(ctx) {
 					gm(buffer)
 						.quality(quality)
 						.autoOrient()
+            .in('-background', 'none')
 						.resize(task.width, task.height, '^')
 						.gravity('Center')
 						.extent(task.width, task.height)
@@ -224,6 +225,7 @@ ImageWrangler.prototype.process = function(ctx) {
 					gm(buffer)
 						.quality(quality)
 						.autoOrient()
+            .in('-background', 'none')
 						.flatten()
 						.resize(task.width, task.height, '>')
 						.toBuffer(function(err, buffer) {
